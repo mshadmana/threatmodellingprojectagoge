@@ -3,7 +3,7 @@
 
 **Version:** 1.0  
 **Date:** 13 October 2026  
-**Author:** Mahammed Shadman Ahmed 
+**Author:** Mahammed Shadman Ahmed  
 **Classification:** Confidential – Simulated Exercise
 
 ---
@@ -19,6 +19,7 @@ A structured threat-modelling assessment was performed using:
 - **Cyber Kill Chain**
 - **Likelihood × Impact risk scoring**
 - **NIST Cybersecurity Framework (CSF) 2.0 control mapping**
+- **Attack-tree analysis**
 
 The assessment identified significant risks affecting the confidentiality, integrity and availability of sensitive healthcare information.
 
@@ -26,7 +27,9 @@ The assessment identified significant risks affecting the confidentiality, integ
 
 **Overall Risk Posture: HIGH**
 
-The prioritised risk assessment identified:
+The platform-wide STRIDE analysis identified **31 threat scenarios**.
+
+Eight priority threats were selected for detailed numerical risk assessment.
 
 | Severity | Count | Key Examples |
 |---|---:|---|
@@ -35,8 +38,6 @@ The prioritised risk assessment identified:
 | 🟡 **Medium** | **2** | DDoS (D1), Prescription Repudiation (R1) |
 | 🟢 **Low** | **0** | None |
 | **Total** | **8** | |
-
-The wider STRIDE threat-identification exercise identified **31 threat scenarios** across six threat categories. Eight of these were selected for detailed numerical risk assessment and remediation prioritisation.
 
 ---
 
@@ -48,9 +49,7 @@ The wider STRIDE threat-identification exercise identified **31 threat scenarios
 
 **Likelihood 4 × Impact 5 = 20/25 – Critical**
 
-A successful injection vulnerability within an internet-facing application or API could expose large volumes of PHI and PII stored within the PostgreSQL patient database.
-
----
+A successful SQL injection vulnerability within an internet-facing application or API could expose sensitive PHI and PII stored within the PostgreSQL patient database.
 
 ### 2. Credential Phishing Creates a Direct Identity-Based Attack Path
 
@@ -58,9 +57,7 @@ A successful injection vulnerability within an internet-facing application or AP
 
 **Likelihood 4 × Impact 4 = 16/25 – Critical**
 
-An attacker who obtains legitimate user or administrator credentials may interact with Solaris through normal authentication and application workflows, making malicious activity more difficult to distinguish from legitimate activity.
-
----
+An attacker who obtains legitimate credentials may interact with Solaris through normal authentication and application workflows, making malicious activity more difficult to distinguish from legitimate activity.
 
 ### 3. Weak Privilege Boundaries Could Increase Breach Impact
 
@@ -69,8 +66,9 @@ High-risk threats including:
 - SQL injection leading to elevated database privileges
 - patient-to-doctor privilege escalation
 - excessive API data exposure
+- prescription-data tampering
 
-demonstrate the importance of enforcing authorisation and least privilege at the application, API and database layers.
+demonstrate the importance of strong authorisation, least privilege and security monitoring across application and database layers.
 
 ---
 
@@ -85,7 +83,7 @@ demonstrate the importance of enforcing authorisation and least privilege at the
 | **Strengthen RBAC and object-level authorisation** | E1, I2 | Medium |
 | **Implement authentication anomaly detection** | S1, E1 | Medium |
 
-The most urgent objective is to reduce the likelihood of **identity compromise and application-level access to patient information**, while improving detection capability when preventative controls fail.
+The most urgent objective is to reduce the likelihood of **identity compromise and application-level access to patient information**, while improving detection capability when preventive controls fail.
 
 ---
 
@@ -134,7 +132,7 @@ The primary data types considered in the threat model are:
 
 ## 1.3 Methodology
 
-The assessment applies four complementary approaches.
+The assessment applies several complementary approaches.
 
 ### STRIDE
 
@@ -149,11 +147,15 @@ Used to identify threats across:
 
 ### MITRE ATT&CK
 
-Used to map identified threats to recognised attacker behaviours and techniques.
+Used to map selected threats to recognised adversary behaviours and techniques.
 
 ### Cyber Kill Chain
 
 Used to analyse how attacks may progress from reconnaissance through to actions on objectives.
+
+### Attack Trees
+
+Used to visualise alternative attack paths that could achieve the objective of accessing or stealing sensitive patient information.
 
 ### Risk Scoring
 
@@ -165,10 +167,14 @@ Both Likelihood and Impact use a scale of **1–5**.
 
 | Score | Priority |
 |---:|---|
-| 16–25 | Critical |
-| 10–15 | High |
-| 5–9 | Medium |
-| 1–4 | Low |
+| **16–25** | Critical |
+| **10–15** | High |
+| **5–9** | Medium |
+| **1–4** | Low |
+
+### Security Control Mapping
+
+Preventive, detective and corrective controls were mapped to relevant risk areas and aligned with the **NIST Cybersecurity Framework 2.0**.
 
 ---
 
@@ -235,11 +241,15 @@ flowchart TB
 
     PR --> DB
     PR --> S3
+
     RX --> DB
     RX --> PHARM
+
     MSG --> REDIS
+
     VITAL --> DB
     LAB --> VITAL
+
     PR --> INS
 ```
 
@@ -249,50 +259,90 @@ Detailed architecture documentation is available in:
 
 ---
 
-## 2.2 Trust Boundaries
+## 2.2 Entry Points
+
+Primary security-relevant entry points include:
+
+- Patient Mobile App API endpoints
+- Doctor Web Portal login
+- Admin Dashboard access
+- API Gateway
+- Insurance provider integrations
+- Pharmacy integration
+- Lab results feed
+- Email notifications
+- SMS alerts
+
+Each entry point represents a potential attack surface requiring appropriate authentication, validation, authorisation and monitoring.
+
+---
+
+## 2.3 Trust Boundaries
 
 Four primary trust boundaries were identified:
 
 | Trust Boundary | Description | Key Concern |
 |---|---|---|
 | **TB1** | Internet → API Gateway | Untrusted external traffic entering Solaris |
-| **TB2** | API Layer → Backend Services | Authorised requests entering internal services |
+| **TB2** | API Layer → Backend Services | Authenticated requests entering internal services |
 | **TB3** | Backend Services → Data Stores | Access to highly sensitive PHI/PII |
 | **TB4** | Backend → External Healthcare APIs | Data crossing organisational boundaries |
 
-Data crossing a trust boundary should be authenticated, authorised, validated, encrypted and appropriately logged.
+Data crossing a trust boundary should be:
+
+**authenticated → validated → authorised → encrypted → logged**
 
 ---
 
-## 2.3 Sensitive Data Flows
-
-Critical flows include:
+## 2.4 Sensitive Data Flows
 
 ### Authentication
 
 ```text
-User → Authentication → Session → Application Access
+User
+ ↓
+Authentication Service
+ ↓
+Session / Access Token
+ ↓
+Application Access
 ```
 
 ### Patient Records
 
 ```text
-User → API → Patient Records Service → PostgreSQL
+User
+ ↓
+API
+ ↓
+Patient Records Service
+ ↓
+PostgreSQL
 ```
 
 ### Prescriptions
 
 ```text
-Doctor → Prescription Service → Patient Database → Pharmacy Network
+Doctor
+ ↓
+Prescription Service
+ ↓
+Patient Database
+ ↓
+Pharmacy Network
 ```
 
 ### Laboratory Results
 
 ```text
-Laboratory System → Vitals Monitoring → Patient Database
+Laboratory System
+ ↓
+Vitals Monitoring
+ ↓
+Patient Database
 ```
 
-Detailed DFDs are available in:
+Detailed Data Flow Diagrams are available in:
 
 - **[Level 0 DFD](../diagrams/dfd-level0.md)**
 - **[Level 1 DFD](../diagrams/dfd-level1.md)**
@@ -307,12 +357,12 @@ The platform-wide STRIDE assessment identified **31 threats**.
 
 | STRIDE Category | Total | Critical | High | Medium | Low |
 |---|---:|---:|---:|---:|---:|
-| Spoofing | 5 | 2 | 2 | 1 | 0 |
-| Tampering | 5 | 3 | 2 | 0 | 0 |
-| Repudiation | 5 | 0 | 3 | 2 | 0 |
-| Information Disclosure | 6 | 3 | 2 | 1 | 0 |
-| Denial of Service | 5 | 0 | 3 | 2 | 0 |
-| Elevation of Privilege | 5 | 4 | 1 | 0 | 0 |
+| **Spoofing** | 5 | 2 | 2 | 1 | 0 |
+| **Tampering** | 5 | 3 | 2 | 0 | 0 |
+| **Repudiation** | 5 | 0 | 3 | 2 | 0 |
+| **Information Disclosure** | 6 | 3 | 2 | 1 | 0 |
+| **Denial of Service** | 5 | 0 | 3 | 2 | 0 |
+| **Elevation of Privilege** | 5 | 4 | 1 | 0 | 0 |
 | **Total** | **31** | **12** | **13** | **6** | **0** |
 
 Key STRIDE concerns include:
@@ -320,9 +370,10 @@ Key STRIDE concerns include:
 - identity impersonation
 - manipulation of patient and prescription data
 - weak audit evidence
-- PHI/PII exposure
+- PHI / PII exposure
 - service disruption
 - privilege escalation
+- third-party integration compromise
 
 The complete register is available in:
 
@@ -332,51 +383,104 @@ The complete register is available in:
 
 ## 3.2 MITRE ATT&CK Mapping
 
-Key ATT&CK techniques identified include:
+MITRE ATT&CK was used to map selected Solaris threats to recognised adversary behaviours.
 
-| Technique | ID | Application |
+Key techniques identified include:
+
+| Technique | ID | Application to Solaris |
 |---|---|---|
-| Spearphishing Link | **T1566.002** | Credential phishing |
-| Valid Accounts | **T1078** | Abuse of legitimate credentials |
-| Steal Application Access Token | **T1528** | Session/token compromise |
-| Exploit Public-Facing Application | **T1190** | Application exploitation / SQL injection |
-| Create Account | **T1136** | Unauthorised account persistence |
-| Account Manipulation | **T1098** | Role or account changes |
-| Escape to Host | **T1611** | Container breakout where applicable |
-| Data from Information Repositories | **T1213** | Collection of stored information |
-| Exfiltration Over Web Service | **T1567** | Potential external transfer of collected data |
+| Spearphishing Link | **T1566.002** | Targeted credential-phishing attacks |
+| Valid Accounts | **T1078** | Abuse of legitimate compromised credentials |
+| Steal Application Access Token | **T1528** | Theft and reuse of application or session tokens |
+| Exploit Public-Facing Application | **T1190** | Exploitation of internet-facing applications, including SQL injection paths |
+| Trusted Relationship | **T1199** | Abuse of a compromised trusted healthcare integration |
+| Adversary-in-the-Middle | **T1557** | Interception or manipulation of external integration traffic |
+| Create Account | **T1136** | Creation of unauthorised accounts to maintain access |
+| Account Manipulation | **T1098** | Modification of existing account roles or privileges |
+| Indicator Removal | **T1070** | Removal or manipulation of security evidence |
+| Escape to Host | **T1611** | Container breakout where containerised infrastructure is applicable |
+| Data from Information Repositories | **T1213** | Collection of sensitive information from repositories |
+| Exfiltration Over Web Service | **T1567** | Potential transfer of collected information through external web services |
 
-Two major attack paths were identified.
+> ATT&CK techniques are mapped to attacker behaviour rather than directly to every application vulnerability. Techniques such as T1567 are only applicable where the corresponding exfiltration behaviour is explicitly present.
 
-### Identity Attack Path
+### Identity-Based Attack Path
 
 ```text
-Phishing
-   ↓
+T1566.002 – Spearphishing Link
+        ↓
 Credential Capture
-   ↓
-Valid Account
-   ↓
+        ↓
+T1078 – Valid Accounts
+        ↓
 Privileged Application Access
-   ↓
-Patient Data Access
+        ↓
+T1213 – Data Collection
+        ↓
+Potential PHI / PII Disclosure
 ```
 
-### Application Attack Path
+This attack path demonstrates how an attacker may bypass traditional perimeter defences by obtaining and abusing a legitimate Solaris identity.
+
+Primary controls include:
+
+- phishing-resistant MFA
+- secure email filtering
+- security awareness training
+- RBAC and least privilege
+- login anomaly detection
+- patient-record access monitoring
+
+### Application-Based Attack Path
 
 ```text
 Internet-Facing Application
         ↓
-Application Vulnerability
+T1190 – Exploit Public-Facing Application
         ↓
 SQL Injection
         ↓
 Database Access
         ↓
-PHI / PII Exposure
+PHI / PII Disclosure
 ```
 
-The detailed mapping is available in:
+Primary controls include:
+
+- parameterised SQL queries
+- server-side input validation
+- Web Application Firewall
+- database least privilege
+- Database Activity Monitoring
+
+### Trusted Integration Attack Path
+
+```text
+Trusted External Healthcare Provider
+        ↓
+T1199 – Trusted Relationship
+        ↓
+Compromised Integration
+        ↓
+Fraudulent / Manipulated Data
+        ↓
+Solaris Backend Service
+        ↓
+Healthcare Data Integrity Impact
+```
+
+Solaris relies on trusted integrations with laboratories, pharmacies and insurance providers. Compromise of a trusted third party could therefore create an additional route into the healthcare environment.
+
+Primary controls include:
+
+- strong API authentication
+- mutual TLS
+- certificate validation
+- message integrity validation
+- restricted third-party access
+- integration monitoring
+
+The complete mapping is available in:
 
 **[MITRE ATT&CK Mapping](../templates/mitre-mapping.md)**
 
@@ -404,7 +508,17 @@ Command & Control
 Actions on Objectives
 ```
 
-Controls such as secure email filtering, EDR, patch management, network monitoring and backup/recovery provide opportunities to interrupt the attack at different stages.
+Security controls provide opportunities to interrupt the attack at multiple stages.
+
+| Kill Chain Stage | Example Defensive Control |
+|---|---|
+| Reconnaissance | Threat monitoring |
+| Weaponization | Malware sandboxing |
+| Delivery | Secure email filtering |
+| Exploitation | EDR, patch management |
+| Installation | File integrity monitoring |
+| Command & Control | NDR, DNS monitoring, egress filtering |
+| Actions on Objectives | DAM, DLP, backup and recovery |
 
 ### Insider Threat Scenario
 
@@ -415,14 +529,15 @@ An insider may already possess:
 - legitimate network access
 - authorised access to patient information
 
-This reduces the value of traditional perimeter controls and increases the importance of:
+This reduces the effectiveness of traditional perimeter controls and increases the importance of:
 
 - RBAC
 - least privilege
 - User Behaviour Analytics
-- DLP
+- Data Loss Prevention
 - Database Activity Monitoring
 - tamper-resistant audit logging
+- regular access reviews
 
 Full analysis:
 
@@ -435,8 +550,6 @@ Full analysis:
 The primary attack-tree objective was:
 
 > **Steal Patient Records**
-
-Potential routes include:
 
 ```mermaid
 flowchart TD
@@ -455,7 +568,23 @@ flowchart TD
     Insider --> Escalate["Privilege Escalation"]
 ```
 
-The analysis identified **credential phishing** as a comparatively accessible attack path and **SQL injection** as a particularly high-impact technical path.
+The analysis identified several routes to sensitive patient information:
+
+- SQL injection
+- credential phishing
+- API authorisation weaknesses
+- insider abuse
+- privilege escalation
+
+Physical access was included for completeness but remains outside the formal assessment scope.
+
+### Most Accessible Attack Path
+
+**Credential phishing** represents a comparatively accessible attack path because an attacker may not need to discover a technical application vulnerability.
+
+### Highest-Impact Technical Path
+
+**SQL injection** represents a particularly high-impact technical path because successful exploitation could expose large volumes of PHI and PII.
 
 Detailed analysis:
 
@@ -465,7 +594,35 @@ Detailed analysis:
 
 # 4. Risk Assessment
 
-## 4.1 Risk Matrix
+## 4.1 Risk Methodology
+
+Risk is calculated using:
+
+> **Risk Score = Likelihood × Impact**
+
+### Likelihood
+
+| Score | Rating |
+|---:|---|
+| 1 | Rare |
+| 2 | Unlikely |
+| 3 | Possible |
+| 4 | Likely |
+| 5 | Almost Certain |
+
+### Impact
+
+| Score | Rating |
+|---:|---|
+| 1 | Negligible |
+| 2 | Minor |
+| 3 | Moderate |
+| 4 | Major |
+| 5 | Severe |
+
+---
+
+## 4.2 Risk Matrix
 
 | Likelihood ↓ / Impact → | 1 – Negligible | 2 – Minor | 3 – Moderate | 4 – Major | 5 – Severe |
 |---|---:|---:|---:|---:|---:|
@@ -477,7 +634,7 @@ Detailed analysis:
 
 ---
 
-## 4.2 Prioritised Risks
+## 4.3 Prioritised Risks
 
 | Rank | ID | Threat | Likelihood | Impact | Score | Priority |
 |---:|---|---|---:|---:|---:|---|
@@ -492,7 +649,14 @@ Detailed analysis:
 
 ---
 
-## 4.3 Risk Distribution
+## 4.4 Risk Distribution
+
+| Severity | Count |
+|---|---:|
+| 🔴 **Critical** | **2** |
+| 🟠 **High** | **4** |
+| 🟡 **Medium** | **2** |
+| 🟢 **Low** | **0** |
 
 ```mermaid
 pie title Prioritised Risk Distribution
@@ -508,17 +672,35 @@ The complete scoring rationale is available in:
 
 ---
 
+## 4.5 Inherent and Residual Risk
+
+The scores above represent **inherent risk** before the effectiveness of proposed controls is fully considered.
+
+```text
+Inherent Risk
+      ↓
+Security Controls Implemented
+      ↓
+Control Effectiveness Validated
+      ↓
+Residual Risk Reassessed
+```
+
+A risk should only be considered reduced after the relevant controls have been implemented and tested for effectiveness.
+
+---
+
 # 5. Security Control Assessment
 
 ## 5.1 Control Categories
 
 Controls were assessed across three categories.
 
-### Preventive
+### Preventive Controls
 
 Designed to prevent attacks from succeeding.
 
-Examples:
+Examples include:
 
 - MFA
 - RBAC
@@ -526,24 +708,26 @@ Examples:
 - WAF
 - parameterised queries
 - encryption
+- security awareness training
 
-### Detective
+### Detective Controls
 
 Designed to identify malicious activity.
 
-Examples:
+Examples include:
 
 - SIEM
 - Database Activity Monitoring
-- anomaly detection
+- authentication anomaly detection
 - patient-access monitoring
+- User Behaviour Analytics
 - audit logging
 
-### Corrective
+### Corrective Controls
 
 Designed to contain and recover from incidents.
 
-Examples:
+Examples include:
 
 - session revocation
 - credential rotation
@@ -566,7 +750,33 @@ Examples:
 | RBAC requires improvement | E1 / I2 | Role and authorisation review | Medium | High |
 | DDoS protection missing | D1 | DDoS mitigation and rate limiting | Medium | Medium |
 
-> Control statuses represent assumptions within the simulated threat-modelling exercise and should be validated against a real environment before being relied upon.
+> Control statuses represent assumptions within this simulated threat-modelling exercise and should be validated against a real environment before being relied upon.
+
+---
+
+## 5.3 Defence in Depth
+
+The recommended controls operate across multiple security layers:
+
+```mermaid
+flowchart LR
+
+    Threat["Threat"]
+    Prevent["Prevent"]
+    Detect["Detect"]
+    Respond["Respond"]
+    Recover["Recover"]
+
+    Threat --> Prevent
+    Prevent --> Detect
+    Detect --> Respond
+    Respond --> Recover
+
+    P["MFA<br/>WAF<br/>RBAC<br/>Input Validation"] -.-> Prevent
+    D["SIEM<br/>DAM<br/>Anomaly Detection"] -.-> Detect
+    R["Containment<br/>Session Revocation<br/>Incident Response"] -.-> Respond
+    RC["Backups<br/>Recovery Plans<br/>Lessons Learned"] -.-> Recover
+```
 
 ---
 
@@ -613,7 +823,8 @@ flowchart LR
     B["30–90 Days<br/>Detection + Access Improvements"]
     C["90–180 Days<br/>Security Maturity"]
 
-    A --> B --> C
+    A --> B
+    B --> C
 
     A1["MFA<br/>WAF<br/>DB Least Privilege<br/>Secure Queries"] -.-> A
 
@@ -626,15 +837,27 @@ flowchart LR
 
 # 7. NIST CSF 2.0 Alignment
 
-The recommended controls map across the NIST Cybersecurity Framework.
+The recommended controls align with the NIST Cybersecurity Framework 2.0.
 
 | Function | Example Activities |
 |---|---|
 | **Identify** | Asset identification, architecture analysis, risk assessment |
-| **Protect** | MFA, RBAC, awareness training, encryption, application security |
+| **Protect** | MFA, RBAC, encryption, secure development, security awareness |
 | **Detect** | SIEM, Database Activity Monitoring, anomaly detection |
 | **Respond** | Incident management, account containment, investigation |
 | **Recover** | Backups, recovery planning, lessons learned |
+
+The control assessment includes areas such as:
+
+- Identity Management, Authentication and Access Control
+- Awareness and Training
+- Data Security
+- Platform Security
+- Technology Infrastructure Resilience
+- Continuous Monitoring
+- Adverse Event Analysis
+- Incident Management
+- Recovery Planning
 
 Detailed mapping:
 
@@ -642,33 +865,123 @@ Detailed mapping:
 
 ---
 
-# 8. Conclusion
+# 8. Detailed Scenario – AI-Assisted Phishing and Credential Compromise
+
+A detailed attack scenario was developed to demonstrate how the threat-modelling frameworks can be applied to a specific attack path.
+
+## Scenario
+
+An attacker researches a privileged Solaris administrator and uses AI-assisted social engineering to produce a convincing phishing email.
+
+The administrator is directed to a fraudulent login page and submits valid credentials.
+
+The attacker then attempts to authenticate to Solaris Care Connect 360 using the compromised identity and access sensitive patient information.
+
+---
+
+## Scenario Attack Path
+
+```mermaid
+flowchart LR
+
+    A["Target Research"]
+    B["AI-Assisted<br/>Phishing"]
+    C["Credential<br/>Capture"]
+    D["Valid Account<br/>Authentication"]
+    E["Privileged<br/>Access"]
+    F["Patient Record<br/>Access"]
+    G["Potential PHI / PII<br/>Disclosure"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+```
+
+The scenario demonstrates how a successful identity compromise can allow an attacker to operate using **legitimate application functionality** rather than exploiting the application directly.
+
+---
+
+## Scenario-Specific Controls
+
+Key controls include:
+
+- phishing-resistant MFA
+- secure email filtering
+- security awareness training
+- conditional access
+- login anomaly detection
+- RBAC
+- least privilege
+- Privileged Access Management
+- centralised logging
+- patient-record access monitoring
+- DLP
+- rapid session revocation
+
+Detailed scenario documentation:
+
+**[Scenario 1 – AI-Assisted Phishing and Credential Compromise](../Scenario%201/README.md)**
+
+---
+
+# 9. Conclusion
 
 The Solaris Care Connect 360 threat model identifies a broad attack surface created by internet-facing applications, privileged identities, sensitive healthcare information and external integrations.
 
-The highest-priority risks are:
+The two highest-priority risks are:
 
-**I1 – SQL Injection Data Breach: 20/25 – Critical**
-
-and:
-
-**S1 – Credential Phishing: 16/25 – Critical**
-
-These findings demonstrate two important attack routes:
-
-> **technical application compromise**
+> **I1 – SQL Injection Data Breach: 20/25 – Critical**
 
 and:
 
-> **trusted identity compromise**
+> **S1 – Credential Phishing: 16/25 – Critical**
 
-Security controls must therefore operate across multiple layers.
+These findings demonstrate two fundamentally different attack routes:
 
-A strong defensive model for Solaris should apply:
+### Technical Application Compromise
 
-**secure authentication → strong authorisation → application security → data protection → continuous monitoring → incident response → recovery**
+```text
+Internet-Facing Application
+        ↓
+SQL Injection
+        ↓
+Database Access
+        ↓
+PHI / PII Exposure
+```
 
-Implementing the recommended controls would reduce the likelihood and potential impact of the identified threats. Residual risk should be reassessed after control implementation and validation.
+### Trusted Identity Compromise
+
+```text
+Credential Phishing
+        ↓
+Credential Theft
+        ↓
+Valid Account Abuse
+        ↓
+Patient Record Access
+```
+
+The assessment also demonstrates the risks created by:
+
+- external healthcare integrations
+- excessive privileges
+- weak object-level authorisation
+- insufficient security monitoring
+- healthcare-data integrity attacks
+- availability threats
+- insider activity
+
+A strong defensive model for Solaris should therefore apply:
+
+> **secure authentication → strong authorisation → application security → data protection → continuous monitoring → incident response → recovery**
+
+Implementing the recommended controls would reduce the likelihood and potential impact of the identified threats.
+
+Residual risk should be reassessed after control implementation and validation.
 
 The threat model should also be reviewed following significant architectural, application or integration changes.
 
@@ -678,58 +991,58 @@ The threat model should also be reviewed following significant architectural, ap
 
 ## Appendix A – Architecture
 
-[System Architecture](../diagrams/architecture.md)
+**[System Architecture](../diagrams/architecture.md)**
 
 ---
 
 ## Appendix B – Data Flow Diagrams
 
-[Level 0 Data Flow Diagram](../diagrams/dfd-level0.md)
+**[Level 0 Data Flow Diagram](../diagrams/dfd-level0.md)**
 
-[Level 1 Data Flow Diagram](../diagrams/dfd-level1.md)
+**[Level 1 Data Flow Diagram](../diagrams/dfd-level1.md)**
 
 ---
 
 ## Appendix C – STRIDE Threat Register
 
-[Complete STRIDE Threat Register](../templates/stride-threats.md)
+**[Complete STRIDE Threat Register](../templates/stride-threats.md)**
 
 ---
 
 ## Appendix D – MITRE ATT&CK Mapping
 
-[MITRE ATT&CK Mapping](../templates/mitre-mapping.md)
+**[MITRE ATT&CK Mapping](../templates/mitre-mapping.md)**
 
 ---
 
 ## Appendix E – Cyber Kill Chain
 
-[Cyber Kill Chain Analysis](../templates/kill-chain-analysis.md)
+**[Cyber Kill Chain Analysis](../templates/kill-chain-analysis.md)**
 
 ---
 
 ## Appendix F – Risk Register
 
-[Risk Register](../templates/risk-register.md)
+**[Risk Register](../templates/risk-register.md)**
 
 ---
 
 ## Appendix G – Security Control Mapping
 
-[Security Control Mapping and Gap Analysis](../templates/control-mapping.md)
+**[Security Control Mapping and Gap Analysis](../templates/control-mapping.md)**
 
 ---
 
 ## Appendix H – Attack Trees
 
-[Attack Tree Analysis](../diagrams/attack-trees.md)
+**[Attack Tree Analysis](../diagrams/attack-trees.md)**
 
 ---
 
 ## Appendix I – Detailed Phishing Scenario
 
-[Scenario 1 – AI-Assisted Phishing and Credential Compromise](../Scenario%201/README.md)
+**[Scenario 1 – AI-Assisted Phishing and Credential Compromise](../Scenario%201/README.md)**
 
 ---
 
-*This document represents a simulated threat-modelling exercise created for educational and portfolio purposes. No real patient information or production healthcare environment was assessed.*
+*This document represents a simulated cybersecurity threat-modelling exercise created for educational and portfolio purposes. No real patient information or production healthcare environment was assessed.*
