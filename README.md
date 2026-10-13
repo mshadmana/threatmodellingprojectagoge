@@ -37,11 +37,11 @@ Solaris Care Connect 360 provides:
 - Messaging Service
 - real-time Vitals Monitoring
 - PostgreSQL patient-data storage
-- document storage
+- Document Storage
 - Redis caching
-- insurance integrations
-- pharmacy integration
-- laboratory-result integration
+- Insurance Provider integrations
+- Pharmacy Network integration
+- Laboratory Results integration
 
 The system processes sensitive data including:
 
@@ -49,7 +49,7 @@ The system processes sensitive data including:
 
 ---
 
-## Architecture
+# Architecture
 
 ```mermaid
 flowchart TB
@@ -117,7 +117,7 @@ The assessment combines several security frameworks.
 | Framework | Purpose |
 |---|---|
 | **STRIDE** | Identify and categorise system threats |
-| **MITRE ATT&CK** | Map threats to real-world attacker techniques |
+| **MITRE ATT&CK** | Map threats to recognised adversary behaviours |
 | **Cyber Kill Chain** | Analyse progression through an attack lifecycle |
 | **Likelihood × Impact** | Quantitatively prioritise identified risks |
 | **NIST CSF 2.0** | Structure recommended security controls and remediation |
@@ -126,7 +126,7 @@ The assessment combines several security frameworks.
 
 # Key Findings
 
-The complete STRIDE analysis identified **31 threats** across the Solaris Care Connect 360 environment.
+The complete STRIDE analysis identified **31 threats** across Solaris Care Connect 360.
 
 Eight priority threats were selected for detailed numerical risk assessment.
 
@@ -149,10 +149,12 @@ Eight priority threats were selected for detailed numerical risk assessment.
 | **4** | Excessive API Data Return | **12/25** | 🟠 High |
 | **5** | Patient-to-Doctor Privilege Escalation | **12/25** | 🟠 High |
 
-The assessment identified two particularly important attack routes:
+The assessment identified two particularly important attack routes.
+
+### Application Compromise
 
 ```text
-Application Compromise
+Internet-Facing Application
         ↓
 SQL Injection
         ↓
@@ -161,17 +163,37 @@ Database Access
 PHI / PII Exposure
 ```
 
-and:
+### Identity Compromise
 
 ```text
-Identity Compromise
-        ↓
 Credential Phishing
+        ↓
+Credential Theft
         ↓
 Valid Account Abuse
         ↓
 Patient Record Access
 ```
+
+**[View Full Risk Register](./templates/risk-register.md)**
+
+---
+
+# STRIDE Analysis
+
+The platform-wide STRIDE assessment identified:
+
+| STRIDE Category | Total | Critical | High | Medium | Low |
+|---|---:|---:|---:|---:|---:|
+| **Spoofing** | 5 | 2 | 2 | 1 | 0 |
+| **Tampering** | 5 | 3 | 2 | 0 | 0 |
+| **Repudiation** | 5 | 0 | 3 | 2 | 0 |
+| **Information Disclosure** | 6 | 3 | 2 | 1 | 0 |
+| **Denial of Service** | 5 | 0 | 3 | 2 | 0 |
+| **Elevation of Privilege** | 5 | 4 | 1 | 0 | 0 |
+| **Total** | **31** | **12** | **13** | **6** | **0** |
+
+**[View Complete STRIDE Threat Register](./templates/stride-threats.md)**
 
 ---
 
@@ -198,7 +220,7 @@ flowchart TD
     Insider --> Priv["Privilege Escalation"]
 ```
 
-The full attack-tree analysis includes attack prerequisites, controls and detection opportunities:
+The attack-tree analysis identified multiple routes to the same objective, demonstrating why Solaris requires defence in depth across identity, application security and access control.
 
 **[View Attack Tree Analysis](./diagrams/attack-trees.md)**
 
@@ -208,27 +230,69 @@ The full attack-tree analysis includes attack prerequisites, controls and detect
 
 Key techniques mapped during the assessment include:
 
-| Technique | MITRE ID |
-|---|---|
-| Spearphishing Link | **T1566.002** |
-| Valid Accounts | **T1078** |
-| Steal Application Access Token | **T1528** |
-| Exploit Public-Facing Application | **T1190** |
-| Create Account | **T1136** |
-| Account Manipulation | **T1098** |
-| Escape to Host | **T1611** |
-| Data from Information Repositories | **T1213** |
-| Exfiltration Over Web Service | **T1567** |
+| Technique | MITRE ID | Application |
+|---|---|---|
+| Spearphishing Link | **T1566.002** | Targeted credential phishing |
+| Valid Accounts | **T1078** | Abuse of legitimate credentials |
+| Steal Application Access Token | **T1528** | Session or token compromise |
+| Exploit Public-Facing Application | **T1190** | Application exploitation and SQL injection |
+| Trusted Relationship | **T1199** | Abuse of trusted external healthcare integrations |
+| Adversary-in-the-Middle | **T1557** | Interception of external integration traffic |
+| Create Account | **T1136** | Creation of unauthorised accounts for persistence |
+| Account Manipulation | **T1098** | Modification of roles or account privileges |
+| Indicator Removal | **T1070** | Removal or manipulation of security evidence |
+| Escape to Host | **T1611** | Container breakout where applicable |
+| Data from Information Repositories | **T1213** | Collection of stored sensitive information |
+| Exfiltration Over Web Service | **T1567** | Potential transfer of collected data using a web service |
+
+> Exfiltration techniques are only applicable when the corresponding data-transfer behaviour is explicitly present in an attack scenario.
 
 **[View MITRE ATT&CK Mapping](./templates/mitre-mapping.md)**
 
 ---
 
+# Cyber Kill Chain Analysis
+
+The project analyses attacks across the seven Cyber Kill Chain stages:
+
+```text
+Reconnaissance
+      ↓
+Weaponization
+      ↓
+Delivery
+      ↓
+Exploitation
+      ↓
+Installation
+      ↓
+Command & Control
+      ↓
+Actions on Objectives
+```
+
+Both external ransomware activity and insider threats were assessed.
+
+The analysis identifies detection and prevention opportunities including:
+
+- email filtering
+- endpoint detection
+- patch management
+- network monitoring
+- Database Activity Monitoring
+- Data Loss Prevention
+- incident response
+- backup and recovery
+
+**[View Cyber Kill Chain Analysis](./templates/kill-chain-analysis.md)**
+
+---
+
 # Security Control Recommendations
 
-The highest-priority controls identified were:
+The assessment identified controls across preventive, detective and corrective categories.
 
-### Identity Security
+## Identity Security
 
 - phishing-resistant Multi-Factor Authentication
 - conditional access
@@ -236,34 +300,67 @@ The highest-priority controls identified were:
 - Privileged Access Management
 - security awareness training
 
-### Application & Database Security
+## Application & Database Security
 
 - parameterised SQL queries
 - server-side input validation
 - Web Application Firewall
 - database least privilege
 - Database Activity Monitoring
+- vulnerability and patch management
 
-### Access Control
+## Access Control
 
 - Role-Based Access Control
 - object-level authorisation
 - least privilege
+- separation of duties
 - regular access reviews
 
-### Monitoring & Detection
+## Data Protection
+
+- encryption in transit and at rest
+- secure backup storage
+- Data Loss Prevention
+- data minimisation
+- patient-record access monitoring
+
+## Monitoring & Detection
 
 - centralised logging
 - SIEM
 - User Behaviour Analytics
-- patient-record access monitoring
-- Data Loss Prevention
+- authentication anomaly detection
+- database monitoring
+- tamper-resistant audit records
+
+---
+
+# NIST CSF 2.0 Control Mapping
+
+Recommended controls were mapped to relevant NIST Cybersecurity Framework functions and categories.
+
+The assessment covers:
+
+**Identify → Protect → Detect → Respond → Recover**
+
+Examples include:
+
+| NIST CSF Area | Security Activities |
+|---|---|
+| **Identify** | Architecture analysis, asset identification, risk assessment |
+| **Protect** | MFA, RBAC, encryption, secure development, awareness training |
+| **Detect** | SIEM, anomaly detection, Database Activity Monitoring |
+| **Respond** | Incident management, session revocation, investigation |
+| **Recover** | Backups, restoration procedures, lessons learned |
+
+**[View Security Control Mapping](./templates/control-mapping.md)**
 
 ---
 
 # Remediation Roadmap
 
-### 0–30 Days
+## 0–30 Days
 
 - implement phishing-resistant MFA
 - deploy WAF protection
@@ -271,21 +368,58 @@ The highest-priority controls identified were:
 - restrict database service-account privileges
 - begin phishing-awareness training
 
-### 30–90 Days
+## 30–90 Days
 
 - deploy Database Activity Monitoring
-- complete RBAC review
+- complete RBAC and authorisation review
 - implement authentication anomaly detection
 - improve API data minimisation
-- implement DDoS protection
+- strengthen prescription audit trails
+- implement DDoS protection and rate limiting
 
-### 90–180 Days
+## 90–180 Days
 
 - implement Privileged Access Management
 - deploy User Behaviour Analytics
-- mature Data Loss Prevention
+- mature Data Loss Prevention capabilities
 - test incident-response procedures
 - review backup and recovery controls
+- establish recurring access reviews
+
+---
+
+# Detailed Scenario – AI-Assisted Phishing
+
+A detailed attack scenario was developed to demonstrate how the frameworks can be applied to a specific attack path.
+
+The scenario models:
+
+```text
+Target Research
+      ↓
+AI-Assisted Phishing
+      ↓
+Credential Capture
+      ↓
+Valid Account Authentication
+      ↓
+Privileged Access
+      ↓
+Patient Record Access
+      ↓
+Potential PHI / PII Disclosure
+```
+
+The Scenario 1 analysis includes:
+
+- detailed attacker flow
+- scenario-specific risk assessment
+- STRIDE analysis
+- MITRE ATT&CK mapping
+- Cyber Kill Chain mapping
+- preventive, detective and corrective controls
+
+**[View Scenario 1 – AI-Assisted Phishing and Credential Compromise](./Scenario%201/README.md)**
 
 ---
 
@@ -355,8 +489,9 @@ This project demonstrates practical experience with:
 - Cyber Kill Chain
 - risk assessment and prioritisation
 - attack-tree development
-- data-flow analysis
+- Data Flow Diagrams
 - trust-boundary identification
+- PHI / PII data classification
 - security control mapping
 - NIST CSF 2.0
 - defence in depth
@@ -367,20 +502,34 @@ This project demonstrates practical experience with:
 
 # Conclusion
 
-The threat model demonstrates that protecting healthcare information requires controls across **identity, application security, authorisation, data protection, monitoring and incident response**.
+The Solaris Care Connect 360 threat model demonstrates that healthcare security requires controls across **identity, application security, authorisation, data protection, monitoring and incident response**.
 
-The highest-priority findings were **SQL injection leading to patient-data exposure** and **credential phishing leading to valid-account compromise**.
+The two highest-priority risks identified were:
 
-The recommended security strategy therefore focuses on preventing these initial attack paths while maintaining sufficient detective and corrective controls to limit the impact of a successful compromise.
+**I1 – SQL Injection Data Breach: 20/25 – Critical**
+
+and
+
+**S1 – Credential Phishing: 16/25 – Critical**
+
+These findings demonstrate two fundamentally different attack routes:
+
+> **technical application compromise**
+
+and
+
+> **trusted identity compromise**
+
+The recommended security strategy therefore combines preventive controls with strong detection, containment and recovery capabilities.
 
 ---
 
-## Full Report
+# Full Threat Model Report
 
-For the complete analysis, risk scoring and remediation recommendations:
+For the complete assessment, risk scoring, control-gap analysis and remediation recommendations:
 
-### **[Read the Full Threat Model Report →](./reports/threat-model-report.md)**
+## **[Read the Full Threat Model Report →](./reports/threat-model-report.md)**
 
 ---
 
-*This repository was created as a simulated cybersecurity threat-modelling project for educational and portfolio purposes.*
+*This repository was created as a simulated cybersecurity threat-modelling project for educational and portfolio purposes. No real patient information or production healthcare environment was assessed.*
